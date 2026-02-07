@@ -2,6 +2,7 @@ mod animation;
 mod config;
 mod display;
 mod render;
+mod scene;
 mod weather;
 
 use animation::{
@@ -17,8 +18,8 @@ use animation::{
 use clap::Parser;
 use config::Config;
 use crossterm::event::{self, Event, KeyCode, KeyModifiers};
-use display::AsciiDisplay;
 use render::TerminalRenderer;
+use scene::WorldScene;
 use std::io;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -77,7 +78,7 @@ async fn run_app(
     renderer: &mut TerminalRenderer,
     simulate_condition: Option<String>,
 ) -> io::Result<()> {
-    let house = AsciiDisplay::render_house();
+    let mut world_scene = WorldScene::new(0, 0); // Will update size later
     let sunny_animation = SunnyAnimation::new();
     let mut animation_controller = AnimationController::new();
 
@@ -101,7 +102,7 @@ async fn run_app(
     let mut is_day = true;
 
     let (term_width, term_height) = renderer.get_size();
-    // Default intensity, will update loop
+    world_scene.update_size(term_width, term_height);
     let mut raindrop_system = RaindropSystem::new(term_width, term_height, RainIntensity::Light);
     let mut thunderstorm_system = ThunderstormSystem::new(term_width, term_height);
     let mut cloud_system = CloudSystem::new(term_width, term_height);
@@ -127,7 +128,7 @@ async fn run_app(
         let rain_intensity = match simulated_condition {
             WeatherCondition::Drizzle => RainIntensity::Drizzle,
             WeatherCondition::Rain | WeatherCondition::RainShowers => RainIntensity::Light,
-            WeatherCondition::FreezingRain => RainIntensity::Heavy, // Treat freezing rain as heavy visually? Or just normal
+            WeatherCondition::FreezingRain => RainIntensity::Heavy,
             WeatherCondition::Thunderstorm => RainIntensity::Heavy,
             WeatherCondition::ThunderstormHail => RainIntensity::Storm,
             _ => RainIntensity::Light,
@@ -139,7 +140,6 @@ async fn run_app(
             WeatherCondition::PartlyCloudy | WeatherCondition::Cloudy | WeatherCondition::Overcast
         );
 
-        // Default simulated day is true unless specified otherwise (not implementing time sim yet)
         is_day = true;
 
         current_weather = Some(WeatherData {
@@ -216,6 +216,7 @@ async fn run_app(
 
         renderer.update_size()?;
         let (term_width, term_height) = renderer.get_size();
+        world_scene.update_size(term_width, term_height);
 
         renderer.clear()?;
 
@@ -259,7 +260,6 @@ async fn run_app(
 
         renderer.render_line_colored(2, 1, &weather_info, crossterm::style::Color::Cyan)?;
 
-        // Background: Night Sky
         if !is_day {
             star_system.update(term_width, term_height);
             star_system.render(renderer)?;
@@ -267,26 +267,18 @@ async fn run_app(
             moon_system.render(renderer)?;
         }
 
-        // Render background animations first
         if is_cloudy || (!is_raining && !is_thunderstorm) {
-            // Show clouds on cloudy days or sunny days (maybe fewer on sunny days?)
-            // For now, just show on cloudy/partly cloudy.
-            // Actually, let's show clouds always if it's not raining heavily, but maybe fewer?
-            // The system handles density? No.
-            // Let's just show if is_cloudy or partly cloudy.
             if is_cloudy {
                 cloud_system.update(term_width, term_height);
                 cloud_system.render(renderer)?;
             }
 
-            // Birds only when not raining/storming and DAYTIME
             if !is_raining && !is_thunderstorm && is_day {
                 bird_system.update(term_width, term_height);
                 bird_system.render(renderer)?;
             }
         }
 
-        // Render sun (background) - Show if clear or partly cloudy AND Day
         let show_sun = if is_day {
             if let Some(ref weather) = current_weather {
                 matches!(
@@ -305,10 +297,8 @@ async fn run_app(
             animation_controller.render_frame(renderer, &sunny_animation, animation_y)?;
         }
 
-        // Render house (midground)
-        let house_y = if term_height > 20 { 10 } else { 9 };
-        let house_strings: Vec<String> = house.iter().map(|s| s.to_string()).collect();
-        renderer.render_centered(&house_strings, house_y)?;
+        // Render World Scene (House, Ground, Decorations)
+        world_scene.render(renderer)?;
 
         // Render foreground (rain/thunder)
         // Thunderstorm includes rain + lightning

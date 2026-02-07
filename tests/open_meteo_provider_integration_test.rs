@@ -1,9 +1,7 @@
 use std::sync::Arc;
 use std::time::Duration;
-use weathr::weather::{
-    OpenMeteoProvider, WeatherClient, WeatherLocation, WeatherUnits,
-};
 use weathr::weather::types::{PrecipitationUnit, TemperatureUnit, WindSpeedUnit};
+use weathr::weather::{OpenMeteoProvider, WeatherClient, WeatherLocation, WeatherUnits};
 
 #[tokio::test]
 async fn test_open_meteo_provider_integration_basic_fetch() {

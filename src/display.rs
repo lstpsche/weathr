@@ -2,68 +2,17 @@
 // Copyright (C) 2026 Dony Mulya
 
 use crossterm::{
-    cursor, execute, queue,
-    style::{Color, Print, ResetColor, SetForegroundColor},
+    cursor, execute,
     terminal::{Clear, ClearType},
 };
-use std::io::{self, Write};
+use std::io;
 
 pub struct AsciiDisplay;
 
 impl AsciiDisplay {
-    pub fn render_house() -> Vec<&'static str> {
-        vec![
-            "        `'::.",
-            "     _________H ,%%&%,",
-            "    /\\     _   \\%&&%%&%",
-            "   /  \\___/^\\___\\%&%%&&",
-            "   |  | []   [] |%\\Y&%'",
-            "   |  |   .-.   | ||",
-            " ~~@._|@@_|||_@@|~||~~~~~~~~~~~~~",
-            "      `\"\"\") )\"\"\"'`",
-        ]
-    }
-
     #[allow(dead_code)]
     pub fn clear_screen() -> io::Result<()> {
         execute!(io::stdout(), Clear(ClearType::All), cursor::MoveTo(0, 0))
-    }
-
-    #[allow(dead_code)]
-    pub fn render_frame(house: &[&str], weather_info: &str) -> io::Result<()> {
-        let mut stdout = io::stdout();
-        let (term_width, _term_height) = crossterm::terminal::size()?;
-
-        // Calculate starting position to center the content
-        let house_width = house.iter().map(|line| line.len()).max().unwrap_or(0);
-        let start_col = if term_width as usize > house_width {
-            (term_width as usize - house_width) / 2
-        } else {
-            0
-        };
-
-        queue!(
-            stdout,
-            Clear(ClearType::All),
-            cursor::MoveTo(0, 0),
-            SetForegroundColor(Color::Cyan),
-            Print(weather_info),
-            ResetColor,
-        )?;
-
-        // Render house line by line with proper positioning
-        queue!(stdout, cursor::MoveTo(0, 3))?;
-        for (idx, line) in house.iter().enumerate() {
-            queue!(
-                stdout,
-                cursor::MoveTo(start_col as u16, 3 + idx as u16),
-                SetForegroundColor(Color::Yellow),
-                Print(line),
-                ResetColor,
-            )?;
-        }
-
-        stdout.flush()
     }
 
     #[allow(dead_code)]
@@ -78,28 +27,8 @@ impl AsciiDisplay {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_render_house_not_empty() {
-        let house = AsciiDisplay::render_house();
-        assert!(!house.is_empty());
-    }
-
-    #[test]
-    fn test_render_house_contains_structure() {
-        let house = AsciiDisplay::render_house();
-        let house_str = house.join("\n");
-        assert!(house_str.contains("_________H"));
-        assert!(house_str.contains("/\\"));
-        assert!(house_str.contains("[]"));
-        assert!(house_str.contains("~~~"));
-    }
-
-    #[test]
-    fn test_render_house_is_multiline() {
-        let house = AsciiDisplay::render_house();
-        assert!(house.len() > 5, "House should have multiple lines");
-    }
+    use crate::scene::ground::Ground;
+    use crate::scene::house::House;
 
     #[test]
     fn test_format_weather_info_positive_coordinates() {
@@ -135,5 +64,15 @@ mod tests {
         let info = AsciiDisplay::format_weather_info(90.0, 180.0);
         assert!(info.contains("90.00°N"));
         assert!(info.contains("180.00°E"));
+    }
+
+    #[test]
+    fn test_house_structure() {
+        let house = House::default();
+        let ascii = house.get_ascii();
+        assert!(!ascii.is_empty());
+        let house_str = ascii.join("\n");
+        assert!(house_str.contains("___"));
+        assert!(house_str.contains("|"));
     }
 }

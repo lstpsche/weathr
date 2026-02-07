@@ -1,18 +1,24 @@
 use weathr::display::AsciiDisplay;
+use weathr::scene::house::House;
 
 #[test]
 fn test_display_integration_house_rendering() {
-    let house = AsciiDisplay::render_house();
+    let house = House::default();
+    let ascii = house.get_ascii();
 
-    assert!(!house.is_empty(), "House should not be empty");
+    assert!(!ascii.is_empty(), "House should not be empty");
 
-    assert!(house.len() >= 7, "House should have at least 7 lines");
+    assert!(ascii.len() >= 7, "House should have at least 7 lines");
 
-    let house_str = house.join("\n");
-    assert!(house_str.contains("H"), "House should contain chimney");
-    assert!(house_str.contains("/\\"), "House should contain roof");
-    assert!(house_str.contains("[]"), "House should contain windows");
-    assert!(house_str.contains("~~~"), "House should contain ground");
+    let house_str = ascii.join("\n");
+    // Updated house design checks
+    assert!(
+        house_str.contains("___"),
+        "House should contain roof/structure"
+    );
+    assert!(house_str.contains("|"), "House should contain walls");
+    // New design uses . and ' for roof curves instead of / \
+    assert!(house_str.contains("."), "House should contain roof details");
 }
 
 #[test]
@@ -84,8 +90,12 @@ fn test_display_integration_extreme_coordinates() {
 
 #[test]
 fn test_display_integration_house_consistency() {
-    let house1 = AsciiDisplay::render_house();
-    let house2 = AsciiDisplay::render_house();
+    let house1 = House::default();
+    let house2 = House::default();
 
-    assert_eq!(house1, house2, "House rendering should be consistent");
+    assert_eq!(
+        house1.get_ascii(),
+        house2.get_ascii(),
+        "House rendering should be consistent"
+    );
 }
