@@ -35,8 +35,20 @@ Edit `~/.config/weathr/config.toml`:
 
 ```toml
 [location]
-latitude = 52.52
-longitude = 13.41
+latitude = 40.7128
+longitude = -74.0060
+```
+
+### Example Locations
+
+```toml
+# Tokyo, Japan
+latitude = 35.6762
+longitude = 139.6503
+
+# Sydney, Australia
+latitude = -33.8688
+longitude = 151.2093
 ```
 
 ## Usage
