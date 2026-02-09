@@ -2,20 +2,36 @@ use crate::render::TerminalRenderer;
 use crossterm::style::Color;
 use std::io;
 
+const WOOD_COLOR: Color = Color::Rgb {
+    r: 210,
+    g: 180,
+    b: 140,
+};
+const DOOR_COLOR: Color = Color::Rgb {
+    r: 139,
+    g: 69,
+    b: 19,
+};
+
 #[derive(Default)]
 pub struct House;
 
 impl House {
+    pub const WIDTH: u16 = 64;
+    pub const HEIGHT: u16 = 13;
+    pub const DOOR_OFFSET: u16 = 18;
+    pub const CHIMNEY_X_OFFSET: u16 = 10;
+
     pub fn height(&self) -> u16 {
-        self.get_ascii().len() as u16
+        Self::HEIGHT
     }
 
     pub fn width(&self) -> u16 {
-        self.get_ascii().iter().map(|l| l.len()).max().unwrap_or(0) as u16
+        Self::WIDTH
     }
 
     pub fn door_offset(&self) -> u16 {
-        18 // Hardcoded based on ASCII art structure
+        Self::DOOR_OFFSET
     }
 
     pub fn get_ascii(&self) -> Vec<&'static str> {
@@ -65,25 +81,13 @@ impl House {
                         let color = if ch == '[' || ch == ']' {
                             Color::Cyan
                         } else if ch == '|' || ch == '.' || ch == '_' {
-                            Color::Rgb {
-                                r: 210,
-                                g: 180,
-                                b: 140,
-                            }
+                            WOOD_COLOR
                         } else if ch == '(' || ch == ')' {
-                            Color::Rgb {
-                                r: 139,
-                                g: 69,
-                                b: 19,
-                            }
+                            DOOR_COLOR
                         } else if ch == '=' {
                             Color::DarkGrey
                         } else {
-                            Color::Rgb {
-                                r: 210,
-                                g: 180,
-                                b: 140,
-                            }
+                            WOOD_COLOR
                         };
                         renderer.render_char(col, row, ch, color)?;
                     }
@@ -94,17 +98,9 @@ impl House {
                         let color = if ch == '=' || ch == '|' {
                             Color::DarkGrey
                         } else if ch == '(' || ch == ')' {
-                            Color::Rgb {
-                                r: 139,
-                                g: 69,
-                                b: 19,
-                            }
+                            DOOR_COLOR
                         } else {
-                            Color::Rgb {
-                                r: 210,
-                                g: 180,
-                                b: 140,
-                            }
+                            WOOD_COLOR
                         };
                         renderer.render_char(col, row, ch, color)?;
                     }

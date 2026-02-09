@@ -80,6 +80,33 @@ impl WeatherCondition {
     }
 }
 
+impl std::str::FromStr for WeatherCondition {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "clear" => Ok(Self::Clear),
+            "partly_cloudy" | "partly-cloudy" => Ok(Self::PartlyCloudy),
+            "cloudy" => Ok(Self::Cloudy),
+            "overcast" => Ok(Self::Overcast),
+            "fog" => Ok(Self::Fog),
+            "drizzle" => Ok(Self::Drizzle),
+            "rain" => Ok(Self::Rain),
+            "freezing_rain" | "freezing-rain" => Ok(Self::FreezingRain),
+            "snow" => Ok(Self::Snow),
+            "snow_grains" | "snow-grains" => Ok(Self::SnowGrains),
+            "rain_showers" | "rain-showers" => Ok(Self::RainShowers),
+            "snow_showers" | "snow-showers" => Ok(Self::SnowShowers),
+            "thunderstorm" => Ok(Self::Thunderstorm),
+            "thunderstorm_hail" | "thunderstorm-hail" => Ok(Self::ThunderstormHail),
+            _ => Err(format!(
+                "Unknown weather condition: '{}'. Valid options: clear, partly_cloudy, cloudy, overcast, fog, drizzle, rain, freezing_rain, snow, snow_grains, rain_showers, snow_showers, thunderstorm, thunderstorm_hail",
+                s
+            )),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum TemperatureUnit {

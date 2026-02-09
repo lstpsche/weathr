@@ -14,6 +14,8 @@ pub struct WorldScene {
 }
 
 impl WorldScene {
+    pub const GROUND_HEIGHT: u16 = 8;
+
     pub fn new(width: u16, height: u16) -> Self {
         let house = house::House;
         let ground = ground::Ground;
@@ -34,8 +36,7 @@ impl WorldScene {
     }
 
     pub fn render(&self, renderer: &mut TerminalRenderer) -> io::Result<()> {
-        let ground_height = 8;
-        let horizon_y = self.height.saturating_sub(ground_height);
+        let horizon_y = self.height.saturating_sub(Self::GROUND_HEIGHT);
 
         // House position
         let house_width = self.house.width();
@@ -48,8 +49,13 @@ impl WorldScene {
         let path_center = house_x + door_offset;
 
         // Render Ground
-        self.ground
-            .render(renderer, self.width, ground_height, horizon_y, path_center)?;
+        self.ground.render(
+            renderer,
+            self.width,
+            Self::GROUND_HEIGHT,
+            horizon_y,
+            path_center,
+        )?;
 
         // Render House
         self.house.render(renderer, house_x, house_y)?;
