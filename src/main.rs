@@ -34,7 +34,7 @@ struct Cli {
     #[arg(short, long, help = "Enable falling autumn leaves")]
     leaves: bool,
 
-    #[arg(long, help = "Auto-detect location via IP")]
+    #[arg(long, help = "Auto-detect location via IP (uses ipinfo.io)")]
     auto_location: bool,
 
     #[arg(long, help = "Hide location coordinates in UI")]
@@ -46,7 +46,47 @@ struct Cli {
 
 #[tokio::main]
 async fn main() -> io::Result<()> {
-    let cli = Cli::parse();
+    let cli = match Cli::try_parse() {
+        Ok(cli) => cli,
+        Err(err) => {
+            let err_str = err.to_string();
+            if err_str.contains("--simulate") && err_str.contains("value is required") {
+                eprintln!("{}", err);
+                eprintln!();
+                eprintln!("Available weather conditions:");
+                eprintln!();
+                eprintln!("  Clear Skies:");
+                eprintln!("    clear              - Clear sunny sky");
+                eprintln!("    partly-cloudy      - Partial cloud coverage");
+                eprintln!("    cloudy             - Cloudy sky");
+                eprintln!("    overcast           - Overcast sky");
+                eprintln!();
+                eprintln!("  Precipitation:");
+                eprintln!("    fog                - Foggy conditions");
+                eprintln!("    drizzle            - Light drizzle");
+                eprintln!("    rain               - Rain");
+                eprintln!("    freezing-rain      - Freezing rain");
+                eprintln!("    rain-showers       - Rain showers");
+                eprintln!();
+                eprintln!("  Snow:");
+                eprintln!("    snow               - Snow");
+                eprintln!("    snow-grains        - Snow grains");
+                eprintln!("    snow-showers       - Snow showers");
+                eprintln!();
+                eprintln!("  Storms:");
+                eprintln!("    thunderstorm       - Thunderstorm");
+                eprintln!("    thunderstorm-hail  - Thunderstorm with hail");
+                eprintln!();
+                eprintln!("Examples:");
+                eprintln!("  weathr --simulate rain");
+                eprintln!("  weathr --simulate snow --night");
+                eprintln!("  weathr -s thunderstorm -n");
+                std::process::exit(1);
+            } else {
+                err.exit();
+            }
+        }
+    };
 
     let mut config = match Config::load() {
         Ok(config) => config,
