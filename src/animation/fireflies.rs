@@ -13,10 +13,11 @@ struct Firefly {
 }
 
 impl Firefly {
-    fn new(terminal_width: u16, terminal_height: u16) -> Self {
+    fn new(terminal_width: u16, horizon_y: u16) -> Self {
         let x = rand::random::<f32>() * terminal_width as f32;
-        let y =
-            (terminal_height as f32 * 0.5) + (rand::random::<f32>() * terminal_height as f32 * 0.4);
+        let min_y = (horizon_y.saturating_sub(8)) as f32;
+        let max_y = (horizon_y.saturating_sub(1)) as f32;
+        let y = min_y + (rand::random::<f32>() * (max_y - min_y));
 
         let vx = (rand::random::<f32>() - 0.5) * 0.3;
         let vy = (rand::random::<f32>() - 0.5) * 0.2;
@@ -35,7 +36,7 @@ impl Firefly {
         }
     }
 
-    fn update(&mut self, terminal_width: u16, terminal_height: u16) {
+    fn update(&mut self, terminal_width: u16, horizon_y: u16) {
         self.x += self.vx;
         self.y += self.vy;
 
@@ -44,16 +45,21 @@ impl Firefly {
             self.vy = (rand::random::<f32>() - 0.5) * 0.2;
         }
 
+        // Wrap horizontally
         if self.x < 0.0 {
             self.x = terminal_width as f32;
         } else if self.x > terminal_width as f32 {
             self.x = 0.0;
         }
 
-        if self.y < 0.0 {
-            self.y = terminal_height as f32;
-        } else if self.y > terminal_height as f32 {
-            self.y = 0.0;
+        let min_y = (horizon_y.saturating_sub(8)) as f32;
+        let max_y = (horizon_y.saturating_sub(1)) as f32;
+        if self.y < min_y {
+            self.y = min_y;
+            self.vy = self.vy.abs(); // Bounce down
+        } else if self.y > max_y {
+            self.y = max_y;
+            self.vy = -self.vy.abs(); // Bounce up
         }
 
         self.glow_phase += self.glow_speed;
@@ -110,32 +116,24 @@ pub struct FireflySystem {
 
 impl FireflySystem {
     pub fn new(terminal_width: u16, terminal_height: u16) -> Self {
-        let mut fireflies = Vec::new();
-        let count = std::cmp::max(3, terminal_width / 15);
-
-        for _ in 0..count {
-            fireflies.push(Firefly::new(terminal_width, terminal_height));
-        }
-
         Self {
-            fireflies,
+            fireflies: Vec::new(),
             terminal_width,
             terminal_height,
         }
     }
 
-    pub fn update(&mut self, terminal_width: u16, terminal_height: u16) {
+    pub fn update(&mut self, terminal_width: u16, terminal_height: u16, horizon_y: u16) {
         self.terminal_width = terminal_width;
         self.terminal_height = terminal_height;
 
         for firefly in &mut self.fireflies {
-            firefly.update(terminal_width, terminal_height);
+            firefly.update(terminal_width, horizon_y);
         }
 
         let target_count = std::cmp::max(3, terminal_width / 15) as usize;
         if self.fireflies.len() < target_count && rand::random::<f32>() < 0.01 {
-            self.fireflies
-                .push(Firefly::new(terminal_width, terminal_height));
+            self.fireflies.push(Firefly::new(terminal_width, horizon_y));
         }
     }
 

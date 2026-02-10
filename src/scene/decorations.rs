@@ -48,10 +48,11 @@ impl Decorations {
             }
         }
 
-        // Render Mailbox (Near path, slightly down)
+        // Render Mailbox (On ground top level, left of tree)
         let (mailbox_lines, mailbox_color) = self.get_mailbox(config.is_day);
-        let mailbox_x = config.path_center + 6; // Right of path
-        let mailbox_y = config.horizon_y + 1; // Slightly on the ground/grass
+        let mailbox_height = mailbox_lines.len() as u16;
+        let mailbox_x = tree_x.saturating_sub(10); // Left of tree
+        let mailbox_y = config.horizon_y.saturating_sub(mailbox_height); // On ground top
 
         if mailbox_x < config.width {
             for (i, line) in mailbox_lines.iter().enumerate() {

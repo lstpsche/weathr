@@ -81,6 +81,10 @@ impl AnimationManager {
         term_width: u16,
         term_height: u16,
     ) -> io::Result<()> {
+        // Calculate horizon_y early so it's available for all systems
+        let ground_height = WorldScene::GROUND_HEIGHT;
+        let horizon_y = term_height.saturating_sub(ground_height);
+
         if !conditions.is_day {
             self.star_system.update(term_width, term_height);
             self.star_system.render(renderer)?;
@@ -88,7 +92,8 @@ impl AnimationManager {
             self.moon_system.render(renderer)?;
 
             if state.should_show_fireflies() {
-                self.firefly_system.update(term_width, term_height);
+                self.firefly_system
+                    .update(term_width, term_height, horizon_y);
                 self.firefly_system.render(renderer)?;
             }
         }

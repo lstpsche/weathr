@@ -15,7 +15,7 @@ pub struct WorldScene {
 }
 
 impl WorldScene {
-    pub const GROUND_HEIGHT: u16 = 8;
+    pub const GROUND_HEIGHT: u16 = 10;
 
     pub fn new(width: u16, height: u16) -> Self {
         let house = house::House;

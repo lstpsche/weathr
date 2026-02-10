@@ -12,12 +12,11 @@ impl Ground {
         width: u16,
         height: u16,
         y_start: u16,
-        path_center: u16,
+        _path_center: u16,
         is_day: bool,
     ) -> io::Result<()> {
         let width = width as usize;
         let height = height as usize;
-        let path_center = path_center as usize;
 
         let grass_colors = if is_day {
             [Color::Green, Color::DarkGreen]
@@ -50,67 +49,37 @@ impl Ground {
             }
         };
 
-        let path_color = if is_day {
-            Color::Rgb {
-                r: 180,
-                g: 160,
-                b: 120,
-            }
-        } else {
-            Color::Rgb {
-                r: 100,
-                g: 90,
-                b: 70,
-            }
-        };
-
         // Simple seeded RNG for deterministic decoration positions
         fn pseudo_rand(x: usize, y: usize) -> u32 {
             ((x as u32 ^ 0x5DEECE6).wrapping_mul(y as u32 ^ 0xB)) % 100
         }
 
         for y in 0..height {
-            let path_width = 4 + y; // Widens as it comes closer
-            let path_start = path_center.saturating_sub(path_width / 2);
-            let path_end = path_center + path_width / 2;
-
             for x in 0..width {
-                let is_path = x >= path_start && x <= path_end;
-
                 let (ch, color) = if y == 0 {
-                    // Top layer: Grass/Flowers and Path
-                    if is_path {
-                        ('=', path_color)
+                    // Top layer: Grass/Flowers only (no path)
+                    let r = pseudo_rand(x, y);
+                    if r < 5 {
+                        // 5% chance of flower
+                        let f_idx = (x + y) % flower_colors.len();
+                        ('*', flower_colors[f_idx])
+                    } else if r < 15 {
+                        // 10% chance of distinct grass blade
+                        (',', grass_colors[1])
                     } else {
-                        // Grass with random flowers
-                        let r = pseudo_rand(x, y);
-                        if r < 5 {
-                            // 5% chance of flower
-                            let f_idx = (x + y) % flower_colors.len();
-                            ('*', flower_colors[f_idx])
-                        } else if r < 15 {
-                            // 10% chance of distinct grass blade
-                            (',', grass_colors[1])
-                        } else {
-                            ('^', grass_colors[0])
-                        }
+                        ('^', grass_colors[0])
                     }
                 } else {
-                    // Lower layers: Soil/Rocks and Path
-                    if is_path {
-                        ('=', path_color)
+                    // Lower layers: Soil/Rocks only (no path)
+                    let r = pseudo_rand(x, y);
+                    let ch = if r < 20 {
+                        '~'
+                    } else if r < 25 {
+                        '.'
                     } else {
-                        // Soil pattern
-                        let r = pseudo_rand(x, y);
-                        let ch = if r < 20 {
-                            '~'
-                        } else if r < 25 {
-                            '.'
-                        } else {
-                            ' '
-                        };
-                        (ch, soil_color)
-                    }
+                        ' '
+                    };
+                    (ch, soil_color)
                 };
 
                 renderer.render_char(x as u16, y_start + y as u16, ch, color)?;
