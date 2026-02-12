@@ -88,9 +88,19 @@ impl AppState {
         let location_str = if self.hide_location {
             String::new()
         } else {
+            let (lat_value, lat_dir) = if self.location.latitude >= 0.0 {
+                (self.location.latitude, "N")
+            } else {
+                (-self.location.latitude, "S")
+            };
+            let (lon_value, lon_dir) = if self.location.longitude >= 0.0 {
+                (self.location.longitude, "E")
+            } else {
+                (-self.location.longitude, "W")
+            };
             format!(
-                " | Location: {:.2}°N, {:.2}°E",
-                self.location.latitude, self.location.longitude
+                " | Location: {:.2}°{}, {:.2}°{}",
+                lat_value, lat_dir, lon_value, lon_dir
             )
         };
 
@@ -184,5 +194,110 @@ impl LoadingState {
 
     pub fn current_char(&self) -> char {
         self.loading_chars[self.frame]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::weather::types::{PrecipitationUnit, TemperatureUnit, WindSpeedUnit};
+
+    fn create_app_state(lat: f64, lon: f64) -> AppState {
+        let location = WeatherLocation {
+            latitude: lat,
+            longitude: lon,
+            elevation: None,
+        };
+        let units = WeatherUnits {
+            temperature: TemperatureUnit::Celsius,
+            wind_speed: WindSpeedUnit::Kmh,
+            precipitation: PrecipitationUnit::Mm,
+        };
+        let mut app = AppState::new(location, false, units);
+
+        let weather = WeatherData {
+            condition: WeatherCondition::Clear,
+            temperature: 20.0,
+            apparent_temperature: 18.0,
+            humidity: 60.0,
+            precipitation: 0.0,
+            wind_speed: 10.0,
+            wind_direction: 0.0,
+            cloud_cover: 0.0,
+            pressure: 1013.0,
+            visibility: Some(10.0),
+            is_day: true,
+            moon_phase: Some(0.5),
+            timestamp: "2024-01-01T12:00:00Z".to_string(),
+        };
+        app.update_weather(weather);
+
+        app
+    }
+
+    #[test]
+    fn test_new_york_coordinates() {
+        // New York: 40.7128°N, 74.0060°W (positive lat, negative lon)
+        let mut app = create_app_state(40.7128, -74.0060);
+        app.update_cached_info();
+
+        println!("NYC: {}", app.cached_weather_info);
+        assert!(app.cached_weather_info.contains("40.71°N"));
+        assert!(app.cached_weather_info.contains("74.01°W"));
+    }
+
+    #[test]
+    fn test_sydney_coordinates() {
+        // Sydney: 33.8688°S, 151.2093°E (negative lat, positive lon)
+        let mut app = create_app_state(-33.8688, 151.2093);
+        app.update_cached_info();
+
+        println!("Sydney: {}", app.cached_weather_info);
+        assert!(app.cached_weather_info.contains("33.87°S"));
+        assert!(app.cached_weather_info.contains("151.21°E"));
+    }
+
+    #[test]
+    fn test_london_coordinates() {
+        // London: 51.5074°N, 0.1278°W (positive lat, negative lon near 0)
+        let mut app = create_app_state(51.5074, -0.1278);
+        app.update_cached_info();
+
+        println!("London: {}", app.cached_weather_info);
+        assert!(app.cached_weather_info.contains("51.51°N"));
+        assert!(app.cached_weather_info.contains("0.13°W"));
+    }
+
+    #[test]
+    fn test_sao_paulo_coordinates() {
+        // São Paulo: 23.5505°S, 46.6333°W (negative lat, negative lon)
+        let mut app = create_app_state(-23.5505, -46.6333);
+        app.update_cached_info();
+
+        println!("São Paulo: {}", app.cached_weather_info);
+        assert!(app.cached_weather_info.contains("23.55°S"));
+        assert!(app.cached_weather_info.contains("46.63°W"));
+    }
+
+    #[test]
+    fn test_tokyo_coordinates() {
+        // Tokyo: 35.6762°N, 139.6503°E (positive lat, positive lon)
+        let mut app = create_app_state(35.6762, 139.6503);
+        app.update_cached_info();
+
+        println!("Tokyo: {}", app.cached_weather_info);
+        assert!(app.cached_weather_info.contains("35.68°N"));
+        assert!(app.cached_weather_info.contains("139.65°E"));
+    }
+
+    #[test]
+    fn test_equator_prime_meridian() {
+        // Null Island: 0°, 0° (exactly at equator and prime meridian)
+        let mut app = create_app_state(0.0, 0.0);
+        app.update_cached_info();
+
+        println!("Null Island: {}", app.cached_weather_info);
+        assert!(app.cached_weather_info.contains("0.00°N"));
+        assert!(app.cached_weather_info.contains("0.00°E"));
     }
 }
