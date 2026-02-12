@@ -11,6 +11,7 @@ homepage = "https://github.com/veirt/weathr"
 documentation = "https://github.com/veirt/weathr#readme"
 keywords = ["weather", "terminal", "ascii", "cli", "tui"]
 categories = ["command-line-utilities"]
+exclude = [".github/", "docs/"]
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
