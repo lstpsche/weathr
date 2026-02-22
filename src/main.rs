@@ -156,12 +156,12 @@ async fn main() -> io::Result<()> {
         Ok(config) => config,
         Err(e) => {
             eprintln!("Error loading config: {}", e);
-            eprintln!("\nAuto-detecting location via IP...");
-            eprintln!("\nTo customize, create a config file at:");
+            eprintln!("\nFix or recreate it at:");
             eprintln!(
                 "  Linux: ~/.config/weathr/config.toml (or $XDG_CONFIG_HOME/weathr/config.toml)"
             );
             eprintln!("  macOS: ~/Library/Application Support/weathr/config.toml");
+            eprintln!("  Windows: %APPDATA%\\weathr\\config.toml");
             eprintln!("\nExample config.toml:");
             eprintln!("  [location]");
             eprintln!("  latitude = 52.52");
@@ -190,6 +190,13 @@ async fn main() -> io::Result<()> {
     }
     if cli.silent {
         config.silent = true;
+    }
+
+    if !config.location.auto
+        && config.location.latitude == config::default_latitude()
+        && config.location.longitude == config::default_longitude()
+    {
+        eprintln!("Warning: No location set, defaulting to Berlin (52.52, 13.41).");
     }
 
     // Auto-detect location if enabled

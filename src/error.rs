@@ -142,10 +142,10 @@ pub enum ConfigError {
     #[error("could not determine config directory (check $XDG_CONFIG_HOME or $HOME)")]
     NoConfigDir,
 
-    #[error("invalid latitude: {0} (must be between -90 and 90)")]
+    #[error("invalid latitude {0} (must be between -90 and 90)")]
     InvalidLatitude(f64),
 
-    #[error("invalid longitude: {0} (must be between -180 and 180)")]
+    #[error("invalid longitude {0} (must be between -180 and 180)")]
     InvalidLongitude(f64),
 }
 

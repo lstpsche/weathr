@@ -48,11 +48,11 @@ fn default_city_name_language() -> String {
     "auto".to_string()
 }
 
-fn default_latitude() -> f64 {
+pub fn default_latitude() -> f64 {
     52.52
 }
 
-fn default_longitude() -> f64 {
+pub fn default_longitude() -> f64 {
     13.41
 }
 
@@ -75,10 +75,17 @@ impl Config {
         let config_path = Self::get_config_path()?;
 
         if !config_path.exists() {
-            eprintln!("Config file not found at {:?}", config_path);
-            eprintln!("Auto-detecting location via IP...");
-            eprintln!("(Set auto = false in config to use Berlin as default)");
-            return Ok(Self::default());
+            eprintln!(
+                "Warning: Config file not found. Create one at {:?} to customize settings.",
+                config_path
+            );
+            let default = Self::default();
+            if default.location.auto {
+                eprintln!(
+                    "Tip: Set latitude and longitude in config.toml for more accurate weather."
+                );
+            }
+            return Ok(default);
         }
 
         let config = Self::load_from_path(&config_path)?;
@@ -104,7 +111,23 @@ impl Config {
             source: e,
         })?;
 
-        toml::from_str(&content).map_err(ConfigError::ParseError)
+        let value: toml::Value = toml::from_str(&content).map_err(ConfigError::ParseError)?;
+
+        if let Some(loc) = value.get("location") {
+            let has_lat = loc.get("latitude").is_some();
+            let has_lon = loc.get("longitude").is_some();
+            if has_lat && !has_lon {
+                eprintln!(
+                    "Warning: latitude is set but longitude is missing, defaulting longitude to 13.41 (Berlin)."
+                );
+            } else if has_lon && !has_lat {
+                eprintln!(
+                    "Warning: longitude is set but latitude is missing, defaulting latitude to 52.52 (Berlin)."
+                );
+            }
+        }
+
+        toml::Value::try_into(value).map_err(ConfigError::ParseError)
     }
 
     fn get_config_path() -> Result<PathBuf, ConfigError> {
@@ -116,7 +139,6 @@ impl Config {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io::Write;
 
     #[test]
     fn test_config_deserialize_valid() {
@@ -144,13 +166,14 @@ longitude = 151.2093
 
     #[test]
     fn test_config_load_from_path_success() {
+        let toml_content = r#"
+[location]
+latitude = 40.7128
+longitude = -74.0060
+"#;
         let temp_dir = std::env::temp_dir();
         let test_config_path = temp_dir.join("weathr_test_config.toml");
-
-        let mut file = fs::File::create(&test_config_path).unwrap();
-        writeln!(file, "[location]").unwrap();
-        writeln!(file, "latitude = 40.7128").unwrap();
-        writeln!(file, "longitude = -74.0060").unwrap();
+        fs::write(&test_config_path, toml_content).unwrap();
 
         let config = Config::load_from_path(&test_config_path).unwrap();
         assert_eq!(config.location.latitude, 40.7128);
@@ -169,11 +192,10 @@ longitude = 151.2093
 
     #[test]
     fn test_config_load_from_path_invalid_toml() {
+        let toml_content = "this is not valid toml {{{{";
         let temp_dir = std::env::temp_dir();
         let test_config_path = temp_dir.join("weathr_test_invalid.toml");
-
-        let mut file = fs::File::create(&test_config_path).unwrap();
-        writeln!(file, "this is not valid toml {{{{").unwrap();
+        fs::write(&test_config_path, toml_content).unwrap();
 
         let result = Config::load_from_path(&test_config_path);
         assert!(result.is_err());
@@ -188,9 +210,15 @@ longitude = 151.2093
 [location]
 longitude = 13.41
 "#;
-        let config: Config = toml::from_str(toml_content).unwrap();
-        assert_eq!(config.location.latitude, 52.52);
+        let temp_dir = std::env::temp_dir();
+        let test_config_path = temp_dir.join("weathr_test_missing_lat.toml");
+        fs::write(&test_config_path, toml_content).unwrap();
+
+        let config = Config::load_from_path(&test_config_path).unwrap();
+        assert_eq!(config.location.latitude, default_latitude());
         assert_eq!(config.location.longitude, 13.41);
+
+        fs::remove_file(test_config_path).ok();
     }
 
     #[test]
@@ -199,9 +227,15 @@ longitude = 13.41
 [location]
 latitude = 52.52
 "#;
-        let config: Config = toml::from_str(toml_content).unwrap();
+        let temp_dir = std::env::temp_dir();
+        let test_config_path = temp_dir.join("weathr_test_missing_lon.toml");
+        fs::write(&test_config_path, toml_content).unwrap();
+
+        let config = Config::load_from_path(&test_config_path).unwrap();
         assert_eq!(config.location.latitude, 52.52);
-        assert_eq!(config.location.longitude, 13.41);
+        assert_eq!(config.location.longitude, default_longitude());
+
+        fs::remove_file(test_config_path).ok();
     }
 
     #[test]
