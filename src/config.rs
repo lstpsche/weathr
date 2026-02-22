@@ -131,7 +131,10 @@ impl Config {
     }
 
     fn get_config_path() -> Result<PathBuf, ConfigError> {
-        let config_dir = dirs::config_dir().ok_or(ConfigError::NoConfigDir)?;
+        let config_dir = dirs::config_dir()
+            .or_else(|| dirs::home_dir().map(|h| h.join(".config")))
+            .ok_or(ConfigError::NoConfigDir)?;
+
         Ok(config_dir.join("weathr").join("config.toml"))
     }
 }
