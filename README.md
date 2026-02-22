@@ -17,11 +17,16 @@ Features real-time weather from Open-Meteo with animated rain, snow, thunderstor
 ## Contents
 
 - [Installation](#installation)
+- [Packaging Status](#packaging-status)
 - [Configuration](#configuration)
 - [Usage](#usage)
 - [Privacy](#privacy)
 - [Roadmap](#roadmap)
 - [License](#license)
+
+## Packaging Status
+
+[![Packaging status](https://repology.org/badge/vertical-allrepos/weathr.svg)](https://repology.org/project/weathr/versions)
 
 ## Installation
 
@@ -45,6 +50,12 @@ cargo install --path .
 
 ```bash
 brew install Veirt/veirt/weathr
+```
+
+### MacPorts (macOS)
+
+```bash
+sudo port install weathr
 ```
 
 ### Arch Linux
