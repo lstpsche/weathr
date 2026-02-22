@@ -177,6 +177,9 @@ impl Config {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Mutex;
+
+    static ENV_MUTEX: Mutex<()> = Mutex::new(());
 
     #[test]
     fn test_config_deserialize_valid() {
@@ -574,6 +577,7 @@ city_name_language = "ru"
 
     #[test]
     fn test_env_var_latitude_override() {
+        let _guard = ENV_MUTEX.lock().unwrap();
         unsafe {
             env::set_var("WEATHR_LATITUDE", "48.8566");
             env::remove_var("WEATHR_LONGITUDE");
@@ -587,6 +591,7 @@ city_name_language = "ru"
 
     #[test]
     fn test_env_var_longitude_override() {
+        let _guard = ENV_MUTEX.lock().unwrap();
         unsafe {
             env::remove_var("WEATHR_LATITUDE");
             env::set_var("WEATHR_LONGITUDE", "2.3522");
@@ -600,6 +605,7 @@ city_name_language = "ru"
 
     #[test]
     fn test_env_var_both_override() {
+        let _guard = ENV_MUTEX.lock().unwrap();
         unsafe {
             env::set_var("WEATHR_LATITUDE", "35.6762");
             env::set_var("WEATHR_LONGITUDE", "139.6503");
@@ -617,6 +623,7 @@ city_name_language = "ru"
 
     #[test]
     fn test_env_var_invalid_latitude() {
+        let _guard = ENV_MUTEX.lock().unwrap();
         unsafe {
             env::set_var("WEATHR_LATITUDE", "not-a-number");
             env::remove_var("WEATHR_LONGITUDE");
@@ -630,6 +637,7 @@ city_name_language = "ru"
 
     #[test]
     fn test_env_var_invalid_longitude() {
+        let _guard = ENV_MUTEX.lock().unwrap();
         unsafe {
             env::remove_var("WEATHR_LATITUDE");
             env::set_var("WEATHR_LONGITUDE", "abc");
@@ -643,6 +651,7 @@ city_name_language = "ru"
 
     #[test]
     fn test_env_var_overrides_config_file_values() {
+        let _guard = ENV_MUTEX.lock().unwrap();
         let toml_content = r#"
 [location]
 latitude = 52.52
