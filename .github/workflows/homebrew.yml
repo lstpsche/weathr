@@ -5,6 +5,11 @@ on:
     workflows: ["Release"]
     types:
       - completed
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to update (e.g. 1.2.3 or v1.2.3)"
+        required: true
 
 permissions:
   contents: write
@@ -12,16 +17,22 @@ permissions:
 jobs:
   update-homebrew:
     if: >
-      github.event.workflow_run.conclusion == 'success' &&
-      startsWith(github.event.workflow_run.head_branch, 'refs/tags/')
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+      startsWith(github.event.workflow_run.head_branch, 'v'))
     runs-on: ubuntu-latest
 
     steps:
       - name: Extract version from tag
         id: version
         run: |
-          REF="${{ github.event.workflow_run.head_branch }}"
-          VERSION="${REF#refs/tags/v}"
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            VERSION="${{ github.event.inputs.version }}"
+            VERSION="${VERSION#v}"
+          else
+            REF="${{ github.event.workflow_run.head_branch }}"
+            VERSION="${REF#v}"
+          fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Version: $VERSION"
 
